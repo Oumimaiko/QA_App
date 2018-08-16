@@ -25,6 +25,8 @@ public class QuestionDetailActivity extends AppCompatActivity {
 
     private DatabaseReference mAnswerRef;
 
+    private boolean mFavorite;
+
     private ChildEventListener mEventListener = new ChildEventListener() {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
@@ -107,6 +109,34 @@ public class QuestionDetailActivity extends AppCompatActivity {
                 }
             }
         });
+
+        // +----------------------------------------------------------------------------------------+
+
+        final FloatingActionButton favstar = (FloatingActionButton) findViewById(R.id.favstar);
+        findViewById(R.id.favstar).setVisibility(View.INVISIBLE);
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (user == null) {
+            findViewById(R.id.favstar).setVisibility(View.INVISIBLE);
+        } else {
+            findViewById(R.id.favstar).setVisibility(View.VISIBLE);
+        }
+
+        favstar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mFavorite){
+                    favstar.setImageResource(R.drawable.outline_star_border_white_24dp);
+                    mFavorite = false;
+                } else {
+                    favstar.setImageResource(R.drawable.outline_star_white_24dp);
+                    mFavorite = true;
+                }
+            }
+        });
+
+        // +----------------------------------------------------------------------------------------+
 
         DatabaseReference dataBaseReference = FirebaseDatabase.getInstance().getReference();
         mAnswerRef = dataBaseReference.child(Const.ContentsPATH).child(String.valueOf(mQuestion.getGenre())).child(mQuestion.getQuestionUid()).child(Const.AnswersPATH);
