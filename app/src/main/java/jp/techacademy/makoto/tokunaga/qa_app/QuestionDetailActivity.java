@@ -1,6 +1,8 @@
 package jp.techacademy.makoto.tokunaga.qa_app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,8 +16,10 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class QuestionDetailActivity extends AppCompatActivity {
 
@@ -25,7 +29,9 @@ public class QuestionDetailActivity extends AppCompatActivity {
 
     private DatabaseReference mAnswerRef;
 
-    private boolean mFavorite;
+    private boolean mFavoriteFlag;
+
+    private String myKey;
 
     private ChildEventListener mEventListener = new ChildEventListener() {
         @Override
@@ -80,6 +86,47 @@ public class QuestionDetailActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         mQuestion = (Question) extras.get("question");
 
+        //+-------------------------------------------------------------------------------------+
+
+        //データベースの取得
+        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
+        //Favoriteネストを取得
+        final DatabaseReference favRef = databaseReference.child(Const.FavoritePATH);
+        //mAuthを利用してuserUidを取得
+        FirebaseAuth fba = FirebaseAuth.getInstance();
+        final String myUid = fba.getCurrentUser().getUid();
+
+        //FavoriteネストからmAuthのUidを用いて自分のネストを探す
+        favRef.child(myUid)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        myKey = dataSnapshot.getKey();
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {}
+                });
+
+        //自分のネストから現在のQuestionUidを利用して、フラグを受け取り、代入する。
+        final String questionUid = mQuestion.getQuestionUid();
+        favRef.child(myUid).child(questionUid)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if (dataSnapshot.getValue() == Const.FAVORITE){
+                            mFavoriteFlag = true;
+                        } else {
+                            mFavoriteFlag = false;
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {}
+                });
+
+        //+-------------------------------------------------------------------------------------+
+
         setTitle(mQuestion.getTitle());
 
         // ListViewの準備
@@ -126,12 +173,14 @@ public class QuestionDetailActivity extends AppCompatActivity {
         favstar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mFavorite){
+                if (mFavoriteFlag){
                     favstar.setImageResource(R.drawable.outline_star_border_white_24dp);
-                    mFavorite = false;
+                    mFavoriteFlag = false;
+                    favRef.child(myKey).setValue(questionUid,Const.NonFAVORITE);
                 } else {
                     favstar.setImageResource(R.drawable.outline_star_white_24dp);
-                    mFavorite = true;
+                    mFavoriteFlag = true;
+                    favRef.child(myKey).setValue(questionUid,Const.FAVORITE);
                 }
             }
         });

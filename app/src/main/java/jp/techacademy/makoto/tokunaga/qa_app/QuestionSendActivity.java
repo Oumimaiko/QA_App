@@ -27,9 +27,11 @@ import android.widget.EditText;
 import android.widget.ImageView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -49,6 +51,8 @@ public class QuestionSendActivity extends AppCompatActivity implements View.OnCl
 
     private int mGenre;
     private Uri mPictureUri;
+
+    private String mQuestionUid;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -186,7 +190,35 @@ public class QuestionSendActivity extends AppCompatActivity implements View.OnCl
                 data.put("image", bitmapString);
             }
 
-            genreRef.push().setValue(data, this);
+            //+-------------------------------------------------------------------------------------+
+
+            //作成するQuestionのKeyを取得
+            final String questionKey = genreRef.push().getKey();
+            //キーを使ってQuestionをFirebaseに保存
+            genreRef.child(questionKey).setValue(data, this);
+
+            //Favoriteネストを開く
+            final DatabaseReference favRef = dataBaseReference.child(Const.FavoritePATH);
+            //作成したユーザーのUidを取得する
+            FirebaseAuth fba = FirebaseAuth.getInstance();
+
+            //Favoriteネストの各ユーザーにNon-Favoriteとして更新して渡す
+            favRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    for (DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
+                        String userKey = childSnapshot.getKey();
+                        favRef.child(userKey).setValue(questionKey,Const.NonFAVORITE);
+                    }
+                }
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
+
+            //+-------------------------------------------------------------------------------------+
+
             mProgress.show();
         }
     }

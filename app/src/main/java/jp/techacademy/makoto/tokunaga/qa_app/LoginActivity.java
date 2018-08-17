@@ -28,6 +28,8 @@ import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
 
+    String mKeyFavoriteUid;
+
     EditText mEmailEditText;
     EditText mPasswordEditText;
     EditText mNameEditText;
@@ -84,6 +86,45 @@ public class LoginActivity extends AppCompatActivity {
                     FirebaseUser user = mAuth.getCurrentUser();
                     DatabaseReference userRef = mDataBaseReference.child(Const.UsersPATH).child(user.getUid());
 
+                    //+----------------------------------------------------------------------------------+
+                    /*
+                    DatabaseReference favRef = mDataBaseReference.child(Const.FavoritePATH);
+                    favRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            Map data = (Map) dataSnapshot.getValue();
+                            String FavUid = mAuth.getCurrentUser().getUid();
+
+                            if (data.get("Uid") == FavUid){
+                                saveFavoriteUid(data.get("FavoriteUid").toString());
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+
+                    mDataBaseReference.orderByChild("UID")
+                            .equalTo(mAuth.getCurrentUser().getUid())
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                    for (DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
+                                        String keyTo= childSnapshot.getKey();
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) {
+
+                                }
+                            });
+                            */
+
+                    //+----------------------------------------------------------------------------------+
+
                     if (mIsCreateAccount) {
                         // アカウント作成の時は表示名をFirebaseに保存する
                         String name = mNameEditText.getText().toString();
@@ -95,6 +136,7 @@ public class LoginActivity extends AppCompatActivity {
 
                         // 表示名をPrefarenceに保存する
                         saveName(name);
+
                     } else {
                         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
@@ -153,6 +195,43 @@ public class LoginActivity extends AppCompatActivity {
                     mIsCreateAccount = true;
 
                     createAccount(email, password);
+
+                    //+----------------------------------------------------------------------------------+
+                    /*
+                    //データベースを開く
+                    DatabaseReference dataBaseReference = FirebaseDatabase.getInstance().getReference();
+                    //Favoriteネストを開く
+                    final DatabaseReference favRef = dataBaseReference.child(Const.FavoritePATH);
+                    //作成したユーザーのUidを取得する
+                    FirebaseAuth fba = FirebaseAuth.getInstance();
+                    //Favoriteネスト直下に新規IDを発行し、その鍵を得る
+                    mKeyFavoriteUid = favRef.push().getKey();
+
+                    //Favorite下のユーザーにnameとuidを記入
+                    favRef.child(mKeyFavoriteUid).setValue("name",name);
+                    favRef.child(mKeyFavoriteUid).setValue("uid",fba.getCurrentUser().getUid());
+
+                    //現存しているQuestionを取得する
+                    DatabaseReference queRef = dataBaseReference.child(Const.ContentsPATH);
+
+                    //Favoriteネストに新規作成したユーザーに現存しているQuestionをすべてNon-Favoriteで渡す
+                    queRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            for (DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
+                                String keyName = childSnapshot.getKey();
+                                favRef.child(mKeyFavoriteUid).setValue(keyName, Const.NonFAVORITE);
+                            }
+                        }
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+                    */
+
+                    //+----------------------------------------------------------------------------------+
+
                 } else {
                     // エラーを表示する
                     Snackbar.make(v, "正しく入力してください", Snackbar.LENGTH_LONG).show();
@@ -207,4 +286,15 @@ public class LoginActivity extends AppCompatActivity {
         editor.putString(Const.NameKEY, name);
         editor.commit();
     }
+
+    //+----------------------------------------------------------------------------------+
+
+    private void saveFavoriteUid(String name) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString(Const.FavoriteUID, name);
+        editor.commit();
+    }
+    //+----------------------------------------------------------------------------------+
+
 }
