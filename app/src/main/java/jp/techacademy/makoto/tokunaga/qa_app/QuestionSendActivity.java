@@ -191,16 +191,11 @@ public class QuestionSendActivity extends AppCompatActivity implements View.OnCl
             }
 
             //+-------------------------------------------------------------------------------------+
-
             //作成するQuestionのKeyを取得
             final String questionKey = genreRef.push().getKey();
-            //キーを使ってQuestionをFirebaseに保存
-            genreRef.child(questionKey).setValue(data, this);
 
             //Favoriteネストを開く
             final DatabaseReference favRef = dataBaseReference.child(Const.FavoritePATH);
-            //作成したユーザーのUidを取得する
-            FirebaseAuth fba = FirebaseAuth.getInstance();
 
             //Favoriteネストの各ユーザーにNon-Favoriteとして更新して渡す
             favRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -208,17 +203,16 @@ public class QuestionSendActivity extends AppCompatActivity implements View.OnCl
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     for (DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
                         String userKey = childSnapshot.getKey();
-                        favRef.child(userKey).setValue(questionKey,Const.NonFAVORITE);
+                        favRef.child(userKey).child(questionKey).setValue(Const.NonFAVORITE);
                     }
                 }
                 @Override
-                public void onCancelled(DatabaseError databaseError) {
-
-                }
+                public void onCancelled(DatabaseError databaseError) { }
             });
 
             //+-------------------------------------------------------------------------------------+
-
+            //キーを使ってQuestionをFirebaseに保存
+            genreRef.child(questionKey).setValue(data, this);
             mProgress.show();
         }
     }
@@ -271,5 +265,10 @@ public class QuestionSendActivity extends AppCompatActivity implements View.OnCl
         } else {
             Snackbar.make(findViewById(android.R.id.content), "投稿に失敗しました", Snackbar.LENGTH_LONG).show();
         }
+    }
+
+    private void updateData(String name, String userId){
+
+
     }
 }

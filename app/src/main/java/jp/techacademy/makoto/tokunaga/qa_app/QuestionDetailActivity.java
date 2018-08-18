@@ -1,11 +1,10 @@
 package jp.techacademy.makoto.tokunaga.qa_app;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
+import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 
@@ -19,7 +18,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
-import java.util.Map;
 
 public class QuestionDetailActivity extends AppCompatActivity {
 
@@ -29,9 +27,16 @@ public class QuestionDetailActivity extends AppCompatActivity {
 
     private DatabaseReference mAnswerRef;
 
-    private boolean mFavoriteFlag;
+    private boolean mFavoriteFlag = false;
 
-    private String myKey;
+    //+------------------------------------------------------------------------------------------+
+    private DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
+    private DatabaseReference mFavRef = databaseReference.child(Const.FavoritePATH);
+    FirebaseAuth fba = FirebaseAuth.getInstance();
+    private String myUid = fba.getCurrentUser().getUid();
+
+    private FloatingActionButton mFavstar;
+    //+------------------------------------------------------------------------------------------+
 
     private ChildEventListener mEventListener = new ChildEventListener() {
         @Override
@@ -57,24 +62,13 @@ public class QuestionDetailActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
-        }
-
+        public void onChildChanged(DataSnapshot dataSnapshot, String s) { }
         @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-        }
-
+        public void onChildRemoved(DataSnapshot dataSnapshot) { }
         @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-        }
-
+        public void onChildMoved(DataSnapshot dataSnapshot, String s) { }
         @Override
-        public void onCancelled(DatabaseError databaseError) {
-
-        }
+        public void onCancelled(DatabaseError databaseError) { }
     };
 
     @Override
@@ -82,47 +76,49 @@ public class QuestionDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_question_detail);
 
+        mFavstar = (FloatingActionButton)findViewById(R.id.favstar);
+
         // 渡ってきたQuestionのオブジェクトを保持する
         Bundle extras = getIntent().getExtras();
         mQuestion = (Question) extras.get("question");
-
         //+-------------------------------------------------------------------------------------+
 
-        //データベースの取得
-        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
-        //Favoriteネストを取得
-        final DatabaseReference favRef = databaseReference.child(Const.FavoritePATH);
-        //mAuthを利用してuserUidを取得
-        FirebaseAuth fba = FirebaseAuth.getInstance();
-        final String myUid = fba.getCurrentUser().getUid();
-
         //FavoriteネストからmAuthのUidを用いて自分のネストを探す
-        favRef.child(myUid)
+        mFavRef.orderByChild("userUid")
+                .equalTo(myUid)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        myKey = dataSnapshot.getKey();
-                    }
+                        for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
+                            String key = (String) childSnapshot.getKey();
 
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {}
-                });
+                            DatabaseReference flagRef = mFavRef.child(key).child(mQuestion.getQuestionUid());
 
-        //自分のネストから現在のQuestionUidを利用して、フラグを受け取り、代入する。
-        final String questionUid = mQuestion.getQuestionUid();
-        favRef.child(myUid).child(questionUid)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        if (dataSnapshot.getValue() == Const.FAVORITE){
-                            mFavoriteFlag = true;
-                        } else {
-                            mFavoriteFlag = false;
+                            Log.d("metaandroid", String.valueOf(flagRef));
+
+                            Log.d("metaandroid", mQuestion.getQuestionUid());
+
+                            flagRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                    Log.d("metaandroid", String.valueOf(dataSnapshot));
+                                    if (dataSnapshot.getValue().equals(Const.FAVORITE)) {
+                                        mFavoriteFlag = true;
+                                        mFavstar.setImageResource(R.drawable.outline_star_white_24dp);
+                                    } else {
+                                        mFavoriteFlag = false;
+                                        mFavstar.setImageResource(R.drawable.outline_star_border_white_24dp);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) {
+                                }
+                            });
                         }
                     }
-
                     @Override
-                    public void onCancelled(DatabaseError databaseError) {}
+                    public void onCancelled(DatabaseError databaseError) { }
                 });
 
         //+-------------------------------------------------------------------------------------+
@@ -157,9 +153,10 @@ public class QuestionDetailActivity extends AppCompatActivity {
             }
         });
 
+
         // +----------------------------------------------------------------------------------------+
 
-        final FloatingActionButton favstar = (FloatingActionButton) findViewById(R.id.favstar);
+        final FloatingActionButton mFavstar = (FloatingActionButton)findViewById(R.id.favstar);
         findViewById(R.id.favstar).setVisibility(View.INVISIBLE);
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -170,17 +167,42 @@ public class QuestionDetailActivity extends AppCompatActivity {
             findViewById(R.id.favstar).setVisibility(View.VISIBLE);
         }
 
-        favstar.setOnClickListener(new View.OnClickListener() {
+        mFavstar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (mFavoriteFlag){
-                    favstar.setImageResource(R.drawable.outline_star_border_white_24dp);
+                    mFavstar.setImageResource(R.drawable.outline_star_border_white_24dp);
                     mFavoriteFlag = false;
-                    favRef.child(myKey).setValue(questionUid,Const.NonFAVORITE);
+                    mFavRef.orderByChild("userUid")
+                            .equalTo(myUid)
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                    for(DataSnapshot childSnapshot: dataSnapshot.getChildren()){
+                                        String key = (String) childSnapshot.getKey();
+                                        mFavRef.child(key).child(mQuestion.getQuestionUid()).setValue(Const.NonFAVORITE);
+                                    }
+                                }
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) { }
+                            });
+
                 } else {
-                    favstar.setImageResource(R.drawable.outline_star_white_24dp);
+                   mFavstar.setImageResource(R.drawable.outline_star_white_24dp);
                     mFavoriteFlag = true;
-                    favRef.child(myKey).setValue(questionUid,Const.FAVORITE);
+                    mFavRef.orderByChild("userUid")
+                            .equalTo(myUid)
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                    for(DataSnapshot childSnapshot: dataSnapshot.getChildren()){
+                                        String key = (String) childSnapshot.getKey();
+                                        mFavRef.child(key).child(mQuestion.getQuestionUid()).setValue(Const.FAVORITE);
+                                    }
+                                }
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) { }
+                            });
                 }
             }
         });
@@ -192,4 +214,5 @@ public class QuestionDetailActivity extends AppCompatActivity {
         mAnswerRef.addChildEventListener(mEventListener);
 
     }
+
 }

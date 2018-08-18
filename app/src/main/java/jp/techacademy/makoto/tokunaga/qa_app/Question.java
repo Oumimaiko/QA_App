@@ -32,6 +32,7 @@ public class Question implements Serializable {
     public String getQuestionUid() {
         return mQuestionUid;
     }
+
     public int getGenre() {
         return mGenre;
     }

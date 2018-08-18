@@ -10,7 +10,7 @@ public class Const {
     public static final String FavoriteUID = "favoriteUID";
 
     public static final String NonFAVORITE = "non-favorite";
-    public static final String FAVORITE = "favorie";
+    public static final String FAVORITE = "favorite";
     // +-------------------------------------------------------------------------------------+
 
     public static final String NameKEY = "name"; // Preferenceに表示名を保存する時のキー
