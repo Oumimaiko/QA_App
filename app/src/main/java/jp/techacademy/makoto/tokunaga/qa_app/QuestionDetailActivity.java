@@ -94,14 +94,14 @@ public class QuestionDetailActivity extends AppCompatActivity {
 
                             DatabaseReference flagRef = mFavRef.child(key).child(mQuestion.getQuestionUid());
 
-                            Log.d("metaandroid", String.valueOf(flagRef));
+                            //Log.d("metaandroid", String.valueOf(flagRef));
 
-                            Log.d("metaandroid", mQuestion.getQuestionUid());
+                            //Log.d("metaandroid", mQuestion.getQuestionUid());
 
                             flagRef.addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
                                 public void onDataChange(DataSnapshot dataSnapshot) {
-                                    Log.d("metaandroid", String.valueOf(dataSnapshot));
+                                    //Log.d("metaandroid", String.valueOf(dataSnapshot));
                                     if (dataSnapshot.getValue().equals(Const.FAVORITE)) {
                                         mFavoriteFlag = true;
                                         mFavstar.setImageResource(R.drawable.outline_star_white_24dp);
