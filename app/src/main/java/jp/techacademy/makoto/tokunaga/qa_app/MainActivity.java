@@ -57,126 +57,6 @@ public class MainActivity extends AppCompatActivity
     private boolean mFlag = false;
 
 
-    private ChildEventListener mFavoriteEventListener = new ChildEventListener() {
-        @Override
-        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            HashMap map = (HashMap) dataSnapshot.getValue();
-            String title = (String) map.get("title");
-            String body = (String) map.get("body");
-            String name = (String) map.get("name");
-            String uid = (String) map.get("uid");
-            String imageString = (String) map.get("image");
-            byte[] bytes;
-            if (imageString != null) {
-                bytes = Base64.decode(imageString, Base64.DEFAULT);
-            } else {
-                bytes = new byte[0];
-            }
-
-            ArrayList<Answer> answerArrayList = new ArrayList<Answer>();
-            HashMap answerMap = (HashMap) map.get("answers");
-            if (answerMap != null) {
-                for (Object key : answerMap.keySet()) {
-                    HashMap temp = (HashMap) answerMap.get((String) key);
-                    String answerBody = (String) temp.get("body");
-                    String answerName = (String) temp.get("name");
-                    String answerUid = (String) temp.get("uid");
-                    Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
-                    answerArrayList.add(answer);
-                }
-            }
-
-            mQuestion = new Question(title, body, name, uid, dataSnapshot.getKey(), mGenre, bytes, answerArrayList);
-
-            mQuestionKey = mQuestion.getQuestionUid();
-            Log.d("metaAndoiodqueKey",mQuestionKey);
-
-            DatabaseReference mDatabaseReference = FirebaseDatabase.getInstance().getReference();
-            mFavRef = mDatabaseReference.child(Const.FavoritePATH);
-
-            mFavRef.orderByChild("userUid")
-                    .equalTo(myUid)
-                    .addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(DataSnapshot dataSnapshot) {
-                            Log.d("metaSnap",String.valueOf(dataSnapshot));
-                            for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
-                                //Log.d("metaAndroidchild", String.valueOf(childSnapshot));
-                                //Log.d("metaValue", String.valueOf(childSnapshot.getValue().getClass()));
-                                //Log.d("metaKey", String.valueOf(childSnapshot.getKey()));
-                                Map<String, HashMap<String, String>> tmpMap = (HashMap<String, HashMap<String, String>>) childSnapshot.getValue();
-                                if (tmpMap.get(mQuestionKey).equals(Const.FAVORITE)){
-                                    mQuestionArrayList.add(mQuestion);
-                                }
-                                Log.d("metatmpmap", String.valueOf(tmpMap));
-                                Log.d("metaTmpMapkey",String.valueOf(tmpMap.keySet()));
-                                Log.d("metatmpmep",String.valueOf(tmpMap.values()));
-                                //DatabaseReference tmpRef = mFavRef.child(key).child(questionKey);
-                                    /*
-                                    mFavRef.equalTo(questionKey)
-                                            .addListenerForSingleValueEvent(new ValueEventListener() {
-                                                @Override
-                                                public void onDataChange(DataSnapshot dataSnapshot) {
-                                                    Log.d("metameta",String.valueOf(dataSnapshot));
-                                                    for(DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
-                                                        Log.d("metaAndroidtmpRefkey", String.valueOf(childSnapshot.getKey()));
-                                                        Log.d("metaAndroidtmprefvalue", String.valueOf(childSnapshot.getValue()));
-                                                    }
-                                                }
-                                                @Override
-                                                public void onCancelled(DatabaseError databaseError) { }
-                                            });*/
-                            }
-                        }
-                @Override
-                public void onCancelled(DatabaseError databaseError) { }
-            });
-
-            //mQuestionArrayList.add(mQuestion);
-            mAdapter.notifyDataSetChanged();
-        }
-
-        @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-            HashMap map = (HashMap) dataSnapshot.getValue();
-
-            // 変更があったQuestionを探す
-            for (Question question: mQuestionArrayList) {
-                if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
-                    // このアプリで変更がある可能性があるのは回答(Answer)のみ
-                    question.getAnswers().clear();
-                    HashMap answerMap = (HashMap) map.get("answers");
-                    if (answerMap != null) {
-                        for (Object key : answerMap.keySet()) {
-                            HashMap temp = (HashMap) answerMap.get((String) key);
-                            String answerBody = (String) temp.get("body");
-                            String answerName = (String) temp.get("name");
-                            String answerUid = (String) temp.get("uid");
-                            Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
-                            question.getAnswers().add(answer);
-                        }
-                    }
-
-                    mAdapter.notifyDataSetChanged();
-                }
-            }
-        }
-
-        @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-        }
-
-        @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-        }
-
-        @Override
-        public void onCancelled(DatabaseError databaseError) {
-
-        }
-    };
 
     //+-----------------------------------------------------------------------------+
 
@@ -241,19 +121,13 @@ public class MainActivity extends AppCompatActivity
         }
 
         @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-        }
+        public void onChildRemoved(DataSnapshot dataSnapshot) { }
 
         @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-        }
+        public void onChildMoved(DataSnapshot dataSnapshot, String s) { }
 
         @Override
-        public void onCancelled(DatabaseError databaseError) {
-
-        }
+        public void onCancelled(DatabaseError databaseError) { }
     };
     // --- ここまで追加する ---
 
@@ -404,7 +278,7 @@ public class MainActivity extends AppCompatActivity
             }
             mGenreRef = mDatabaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
             mGenreRef.addChildEventListener(mEventListener);
-        } else {
+        } /*else {
             DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
             drawer.closeDrawer(GravityCompat.START);
 
@@ -417,57 +291,139 @@ public class MainActivity extends AppCompatActivity
             mGenreRef3 = mDatabaseReference.child(Const.ContentsPATH).child("3");
             mGenreRef4 = mDatabaseReference.child(Const.ContentsPATH).child("4");
 
-            mGenreRef1.addChildEventListener(mFavoriteEventListener);
-            mGenreRef2.addChildEventListener(mFavoriteEventListener);
-            mGenreRef3.addChildEventListener(mFavoriteEventListener);
-            mGenreRef4.addChildEventListener(mFavoriteEventListener);
-        }
+            mGenreRef1.addChildEventListener(mEventListener);
+            mGenreRef2.addChildEventListener(mEventListener);
+            mGenreRef3.addChildEventListener(mEventListener);
+            mGenreRef4.addChildEventListener(mEventListener);
+        } */
         // --- ここまで追加する ---
         return true;
-    }
+     }
 }
 
-/* else {
-            mQuestionArrayList.clear();
-            mAdapter.setQuestionArrayList(mQuestionArrayList);
-            mListView.setAdapter(mAdapter);
-            //フローティングボタンを消す
-            findViewById(R.id.fab).setVisibility(View.INVISIBLE);
+/*
+    private ChildEventListener mFavoriteEventListener = new ChildEventListener() {
+        @Override
+        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+            final HashMap map = (HashMap) dataSnapshot.getValue();
+            String title = (String) map.get("title");
+            String body = (String) map.get("body");
+            String name = (String) map.get("name");
+            String uid = (String) map.get("uid");
+            String imageString = (String) map.get("image");
+            byte[] bytes;
+            if (imageString != null) {
+                bytes = Base64.decode(imageString, Base64.DEFAULT);
+            } else {
+                bytes = new byte[0];
+            }
 
-            FirebaseAuth fbAuth = FirebaseAuth.getInstance();
-            String myUid = fbAuth.getCurrentUser().getUid();
+            ArrayList<Answer> answerArrayList = new ArrayList<Answer>();
+            HashMap answerMap = (HashMap) map.get("answers");
+            if (answerMap != null) {
+                for (Object key : answerMap.keySet()) {
+                    HashMap temp = (HashMap) answerMap.get((String) key);
+                    String answerBody = (String) temp.get("body");
+                    String answerName = (String) temp.get("name");
+                    String answerUid = (String) temp.get("uid");
+                    Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
+                    answerArrayList.add(answer);
+                }
+            }
 
-            /*
-            favtmpRef.orderByChild("userUid")
+            mQuestion = new Question(title, body, name, uid, dataSnapshot.getKey(), mGenre, bytes, answerArrayList);
+
+            mQuestionKey = mQuestion.getQuestionUid();
+            Log.d("metaAndoiodqueKey", mQuestionKey);
+
+            DatabaseReference mDatabaseReference = FirebaseDatabase.getInstance().getReference();
+            mFavRef = mDatabaseReference.child(Const.FavoritePATH);
+
+            mFavRef.orderByChild("userUid")
                     .equalTo(myUid)
                     .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(DataSnapshot dataSnapshot) {
-                            for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
-                                String key = (String) childSnapshot.getKey();
-                                Log.d("metaAndroidchild",String.valueOf(childSnapshot));
-                                Log.d("metaAndroidkey",String.valueOf(childSnapshot.getKey()));
+                            for (DataSnapshot childsnapshot : dataSnapshot.getChildren()) {
+                                Log.d("metaSnap", String.valueOf(childsnapshot));
+                                Map<String, String> tmpMap = (HashMap<String, String>) childsnapshot.getValue();
+                                String swi = tmpMap.get(mQuestionKey);
+                                if (swi.equals(Const.FAVORITE)) {
+                                    mQuestionArrayList.add(mQuestion);
+                                }
+                                Log.d("metaValue", String.valueOf(swi));
+                                //Map<String, HashMap<String, String>> tmpMap = (HashMap<String, HashMap<String, String>>) dataSnapshot.getValue();
+                                //Log.d("Metatmpmapgetvalue",String.valueOf(dataSnapshot.getValue()));
+                                //tmpMap.values();
+                                //Log.d("Metatmpmapvalue",String.valueOf(tmpMap.get(mQuestionKey)));
+                            }
+                        }
 
-
-                                DatabaseReference flagRef = favtmpRef.child(key);
-
-                                Log.d("metaandroid", String.valueOf(flagRef));
-
-                                flagRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                    @Override
-                                    public void onDataChange(DataSnapshot dataSnapshot) {
-                                        Log.d("metaAndroid",String.valueOf(dataSnapshot));
-
-                                    }
-                                    @Override
-                                    public void onCancelled(DatabaseError databaseError) { }
-                                });
+                        @Override
+                        public void onChildAdded(DataSnapshot dataSnapshot, String s) { }
+                        @Override
+                        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                            for(DataSnapshot childsnapshot: dataSnapshot.getChildren()){
+                                Log.d("metaSnap",String.valueOf(childsnapshot));
+                                Map<String,String> tmpMap = (HashMap<String,String>) childsnapshot.getValue();
+                                String swi = tmpMap.get(mQuestionKey);
+                                if (swi.equals(Const.FAVORITE)){
+                                    mQuestionArrayList.add(mQuestion);
+                                }
+                                Log.d("metaValue",String.valueOf(swi));
+                                //Map<String, HashMap<String, String>> tmpMap = (HashMap<String, HashMap<String, String>>) dataSnapshot.getValue();
+                                //Log.d("Metatmpmapgetvalue",String.valueOf(dataSnapshot.getValue()));
+                                //tmpMap.values();
+                                //Log.d("Metatmpmapvalue",String.valueOf(tmpMap.get(mQuestionKey)));
                             }
                         }
                         @Override
-                        public void onCancelled(DatabaseError databaseError) { }
+                        public void onChildRemoved(DataSnapshot dataSnapshot) { }
+                        @Override
+                        public void onChildMoved(DataSnapshot dataSnapshot, String s) { }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+                        }
                     });
 
-            //DatabaseReference FavoriteRef = mDatabaseReference.child("");
+            mAdapter.notifyDataSetChanged();
 
-        }*/
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                HashMap map = (HashMap) dataSnapshot.getValue();
+
+                // 変更があったQuestionを探す
+                for (Question question: mQuestionArrayList) {
+                    if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
+                        // このアプリで変更がある可能性があるのは回答(Answer)のみ
+                        question.getAnswers().clear();
+                        HashMap answerMap = (HashMap) map.get("answers");
+                        if (answerMap != null) {
+                            for (Object key : answerMap.keySet()) {
+                                HashMap temp = (HashMap) answerMap.get((String) key);
+                                String answerBody = (String) temp.get("body");
+                                String answerName = (String) temp.get("name");
+                                String answerUid = (String) temp.get("uid");
+                                Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
+                                question.getAnswers().add(answer);
+                            }
+
+                        }
+
+                        mAdapter.notifyDataSetChanged();
+                    }
+                }
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) { }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) { }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) { }
+        };
+*/
